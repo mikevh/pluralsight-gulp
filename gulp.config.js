@@ -13,8 +13,11 @@ module.exports = function() {
             './src/**/*.js', // all js files in src
             './*.js' // all js files in root
         ],
+        build: './build/',
         client: client,
         css: temp + 'styles.css',
+        fonts: './bower_components/font-awesome/fonts/**/*.*',
+        images: client + 'images/**/*.*',
         less: client + 'styles/styles.less',
         index: client + 'index.html',
         js: [
@@ -29,7 +32,7 @@ module.exports = function() {
          * browser sync
          */
         browserReloadDelay: 1000,
-        
+
         /*
          * Bower & NPM locations
          */
