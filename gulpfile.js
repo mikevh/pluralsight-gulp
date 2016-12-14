@@ -33,6 +33,26 @@ gulp.task('less-watcher', function() {
     gulp.watch([config.less], ['styles']);
 });
 
+gulp.task('wiredep', function() {
+    log('Wire up the bower CSS JS and the app js into the html');
+    var options = config.getWiredepDefaultOptions();
+    var wiredep = require('wiredep').stream;
+
+    return gulp.src(config.index) // get the index file
+        .pipe(wiredep(options)) // wire in all bower dependencies in index.html between <!-- bower:css --> and <!-- bower:js --> tags
+        .pipe($.inject(gulp.src(config.js))) // get all .js files from config.js locs, add script tags in the <!-- inject:js --> tag
+        .pipe(gulp.dest(config.client)); // write out updated index file to config.client location
+});
+
+gulp.task('inject', ['wiredep', 'styles'], function() {
+    log('Wire up the bower CSS JS and the app js into the html');
+
+    return gulp.src(config.index) // get index.html
+        .pipe($.inject(gulp.src(config.css))) // get the .css files and wire up their locations
+        .pipe(gulp.dest(config.client)); // write out to client location
+});
+
+
 /////
 
 function clean(path, done) {
