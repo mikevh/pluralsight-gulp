@@ -1,5 +1,6 @@
 var gulp = require('gulp');
 var args = require('yargs').argv;
+var browserSync = require('browser-sync');
 var del = require('del');
 var $ = require('gulp-load-plugins')({lazy: true});
 var config = require('./gulp.config')();
@@ -70,9 +71,14 @@ gulp.task('serve-dev', ['inject'], function() {
         .on('restart', ['vet'], function(ev) {
             log('** nodemon restarted');
             log('files changed on restart:\n' + ev);
+            setTimeout(function() {
+                browserSync.notify('Reloading ...');
+                browserSync.reload({stream: false});
+            }, config.browserReloadDelay);
         })
         .on('start', function() {
             log('** nodemon started');
+            startBrowserSync();
         })
         .on('crash', function() {
             log('** nodemon crashed: script crashed for some reason');
@@ -83,6 +89,46 @@ gulp.task('serve-dev', ['inject'], function() {
 });
 
 /////
+
+function changeEvent(event) {
+    var srcPattern = new RegExp('/.*(?=/' + config.source + ')/');
+    log('File ' + event.path.replace(srcPattern, '') + ' ')
+}
+
+function startBrowserSync() {
+    if(args.nosync || browserSync.active) {
+        return;
+    }
+    
+    log('Starting browser-sync on port ' + port);
+
+     gulp.watch([config.less], ['styles'])
+         .on('change', function(event) { changeEvent(event); });
+
+    var options = {
+        proxy: 'localhost:' + port,
+        port: 3000,
+        files: [
+            config.client + '**/*.*',
+            '!' + config.less,
+            config.temp + '**/*.css'
+        ],
+        ghostMode: {
+            clicks: true,
+            location: false,
+            forms: true,
+            scroll: true
+        },
+        injectChanges: true,
+        logFileChange: true,
+        logLevel: 'debug',
+        logPrefix: 'browsersync',
+        notify: true,
+        reloadDelay: 0
+    };
+
+    browserSync(options);
+}
 
 function clean(path, done) {
     log('Cleaning: ' + $.util.colors.blue(path));
