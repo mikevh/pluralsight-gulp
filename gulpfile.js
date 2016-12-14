@@ -18,7 +18,7 @@ gulp.task('styles', ['clean-styles'], function() {
     log('Compiling LESS --> CSS');
 
     return gulp.src(config.less)
-    .pipe($.plumber())
+    .pipe($.plumber()) // error display
     .pipe($.less())
     .pipe($.autoprefixer({browsers: ['last 2 versions', '> 5%']}))
     .pipe(gulp.dest(config.temp));
