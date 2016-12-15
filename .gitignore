@@ -6,6 +6,8 @@
 bin
 obj
 /packages
+/.tmp
+/build
 
 # Ignore Node & Bower
 ###################
