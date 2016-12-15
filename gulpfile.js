@@ -114,19 +114,79 @@ gulp.task('inject', ['wiredep', 'styles', 'templatecache'], function() {
 gulp.task('optimize', ['inject', 'fonts', 'images'], function() {
     log('Optimizing the js, css, html');
     var templateCache = config.temp + config.templateCache.file;
-    var cssFilter = $.filter('**/*.css');
 
+    var cssFilter = $.filter('**/*.css', {restore: true});
+    var jsFilter = $.filter('**/app.js', {restore: true});
+    var indexfilter = $.filter(['**/*', '!**/index.html'], {restore: true});
+    
     return gulp
+        // start with index.html
         .src(config.index)
+        // error display
         .pipe($.plumber())
+        // grab templates.js
         .pipe($.inject(gulp.src(templateCache, {read:false}), {
             starttag: '<!-- inject:templates:js -->'
         }))
+        // concat to single files
         .pipe($.useref({searchPath: './'}))
-        .pipe($.if('*.css', $.csso()))
-        .pipe($.if('**/app.js', $.ngAnnotate()))
-        .pipe($.if('**/app.js',  $.uglify()))
+
+        // filter down to just css
+        .pipe(cssFilter)
+        // crunch css
+        .pipe($.csso())
+        .pipe(cssFilter.restore)
+
+        // filter pipe down to just app.js        
+        .pipe(jsFilter)
+        // minsafe angular
+        .pipe($.ngAnnotate())
+        // crunch js
+        .pipe($.uglify())
+        .pipe(jsFilter.restore)
+
+        // filter out index.html for renames
+        .pipe(indexfilter)
+        .pipe($.rev())
+        .pipe(indexfilter.restore)
+
+        // update file name for revisions
+        .pipe($.revReplace())
+        .pipe(gulp.dest(config.build))
+        .pipe($.rev.manifest())
         .pipe(gulp.dest(config.build));
+});
+
+/**
+ * Bump the version
+ * --type=pre will bump the prerelease version *.*.*-X
+ * --type=patch OR NO FLAG will bump the patch version *.*.X
+ * --type=minor wil bump the minor version *.X.*
+ * --type=major will bump the major version X.*.*
+ * --version=1.2.3 will bump to a specific version and ignore other flags
+ */
+gulp.task('bump', function() {
+    var msg = 'Bumping versions';
+    var type = args.type;
+    var version = args.version;
+    var options = {};
+    
+    if(version) {
+        options.version = version;
+        msg += ' to ' + version;
+    }
+    else {
+        options.type = type;
+        msg += ' for a ' + type;
+    }
+    log(msg);
+
+    return gulp
+        .src(config.packages)
+        .pipe($.plumber())
+        .pipe($.print())
+        .pipe($.bump(options))
+        .pipe(gulp.dest(config.root));
 });
 
 gulp.task('serve-build', ['optimize'], function() {
